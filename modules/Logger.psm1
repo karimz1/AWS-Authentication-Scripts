@@ -11,7 +11,13 @@ function Write-Log {
     }
 
     $maxFileSize = 10MB
-    Add-Content -Path $LogFileName -Value ("{0:yyyy-MM-dd HH:mm:ss} - {1}" -f (Get-Date), $Message)
+    $logMessage = "{0:yyyy-MM-dd HH:mm:ss} - {1}" -f (Get-Date), $Message
+
+    # Log to file
+    Add-Content -Path $LogFileName -Value $logMessage
+
+    # Log to console
+    Write-Output $logMessage
 
     while ((Get-Item $LogFileName).Length -gt $maxFileSize) {
         $content = Get-Content $LogFileName
