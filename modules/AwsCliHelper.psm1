@@ -11,6 +11,17 @@ function Get-DomainName {
     return $domainName
 }
 
+function Get-Region {
+    param(
+        [string]$RegionFallback
+    )
+    $region = aws configure get region --output text
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($region)) {
+        $region = $RegionFallback
+    }
+    return $region
+}
+
 function Get-DomainOwnerId {
     $domainOwnerId = aws sts get-caller-identity --query "Account" --output text
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($domainOwnerId)) {

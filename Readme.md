@@ -30,6 +30,18 @@ Welcome to the AWS Authentication Scripts repository! This project contains Powe
 2. Run the script using the following command:
     ```powershell
     .\refreshNugetTokens.ps1
+    ````
+3. To view the help message, use the following command: ``.\refreshNugetTokens.ps1 -help``
+
+4. Optional parameters:
+
+    ``-RegionFallback``: Specify a fallback region (e.g., ``us-east-1``) if the AWS CLI region is not configured.
+    ``-DEBUG:`` Enable debug mode for more detailed logs.
+    Example:
+
+    ```` pwsh
+    .\refreshNugetTokens.ps1 -RegionFallback "eu-west-1" -DEBUG $true
+    ````
 
 
 ### Authenticate Docker with AWS ECR
@@ -39,7 +51,16 @@ Welcome to the AWS Authentication Scripts repository! This project contains Powe
     ```powershell
     .\refreshEcrDockerToken.ps1
     ```
+3. To view the help message, use the following command: ``.\refreshEcrDockerToken.ps1 -help``
 
+4. Optional parameters:
+
+    ``-RegionFallback``: Specify a fallback region (e.g., ``us-east-1``) if the AWS CLI region is not configured.
+    Example:
+
+    ```` pwsh
+    .\refreshEcrDockerToken.ps1 -RegionFallback "eu-west-1"
+    ````
 
 
 ### Automate with Cron Jobs or Task Scheduler 
@@ -71,24 +92,6 @@ crontab -e
     `"pwsh C:\path\to\the\repository\refreshNugetTokens.ps1"`
 
 4. same for the other scripts if you need it.
-
-   
-
-## Script Configuration
-
-Both scripts contain configuration variables that can be modified as needed:
-
-- **REGION**: The AWS region where the service is hosted. Default is `us-east-1`.
-- **DEBUG**: Boolean to enable or disable debug mode. Default is `false`.
-
-### Example Configuration
-
-```powershell
-# start Configuration
-$REGION = "us-east-1"
-$DEBUG = $false
-# end Configuration
-```
 
 
 
