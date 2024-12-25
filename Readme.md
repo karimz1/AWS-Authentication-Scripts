@@ -26,12 +26,12 @@ Welcome to the AWS Authentication Scripts repository! This project contains Powe
 
 ### Refresh NuGet Tokens for AWS CodeArtifact
 
-1. Open PowerShell Core and navigate to the directory containing the `refreshNugetTokens.ps1` script.
+1. Open PowerShell Core and navigate to the directory containing the `refreshNugetToken.ps1` script.
 2. Run the script using the following command:
     ```powershell
-    .\refreshNugetTokens.ps1
+    .\refreshNugetToken.ps1
     ````
-3. To view the help message, use the following command: ``.\refreshNugetTokens.ps1 -help``
+3. To view the help message, use the following command: ``.\refreshNugetToken.ps1 -help``
 
 4. Optional parameters:
 
@@ -40,7 +40,7 @@ Welcome to the AWS Authentication Scripts repository! This project contains Powe
     Example:
 
     ```` pwsh
-    .\refreshNugetTokens.ps1 -RegionFallback "eu-west-1" -DEBUG $true
+    .\refreshNugetToken.ps1 -RegionFallback "eu-west-1" -DEBUG $true
     ````
 
 
