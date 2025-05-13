@@ -2,14 +2,13 @@
 
 ## 🛠️ Script: `refreshEcrDockerToken.ps1`
 
-To execute this script securely and effectively, the following IAM roles or policies must be attached to the AWS identity (user or role) executing the script.
+To execute this script securely and effectively, the following IAM roles or policies must be attached to the AWS identity (user or role) executing the script. I've used Minimal required roles, for security!
 
 ------
 
 ### 🔐 Role 1: `ECR_Script_Minimal_Role`
 
-This role grants basic permissions to identify the caller and interact with AWS CodeArtifact listing APIs, if required by the environment.
-
+This role grants basic permissions to identify the caller and interact with AWS CodeArtifact listing APIs.
 ```json
 {
     "Version": "2012-10-17",
