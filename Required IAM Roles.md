@@ -54,9 +54,6 @@ This role provides the necessary permissions to authenticate with Amazon ECR and
 }
 ```
 
-> 🔒 **Note:** If you also need to push images to ECR, consider adding `ecr:PutImage` and related actions, or use the `AmazonEC2ContainerRegistryPowerUser` managed policy.
-
-
 
 ## 📌 Disclaimer
 
