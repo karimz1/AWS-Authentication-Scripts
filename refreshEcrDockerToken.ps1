@@ -1,82 +1,82 @@
+<#
+.SYNOPSIS
+    Authenticates Docker with AWS ECR.
+#>
 param(
     [string]$RegionFallback = "us-east-1",   # Optional fallback region
     [string]$AccountId,                      # Optional 12-digit AWS account ID
+    [switch]$SSO,                            # NEW: Force AWS SSO Login
     [Alias("help")]
-    [switch]$ShowHelp                        # Show this help & exit
+    [switch]$ShowHelp                        
 )
 
-function Show-Help {
-    $helpMessage = @"
-refreshEcrDockerToken.ps1 - Authenticate Docker with AWS ECR.
-
-PARAMETERS
-  -AccountId <string>     Optional. 12-digit AWS account ID.  
-                          When provided, the script does NOT call
-                          sts:GetCallerIdentity, so the IAM policy
-                          can omit that action entirely.
-
-  -RegionFallback <string> Optional fallback region if AWS CLI has
-                          no default.  Default: "us-east-1"
-
-  -help                   Show this help.
-
-USAGE
-  .\refreshEcrDockerToken.ps1                 # auto-detect account ID
-  .\refreshEcrDockerToken.ps1 -AccountId 123456789012
-  .\refreshEcrDockerToken.ps1 -RegionFallback eu-west-1
-"@
-    Write-Output $helpMessage
-}
-
-if ($ShowHelp) {
-    Show-Help
-    exit 0
-}
 
 $appRoot = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition
-Import-Module "$appRoot\modules\Logger.psm1"
-Import-Module "$appRoot\modules\AwsCliHelper.psm1"
 
-$LOG    = "$appRoot\Logs\refreshEcrDockerToken.log"
+try {
+    Import-Module "$appRoot\modules\Logger.psm1" -ErrorAction Stop
+    Import-Module "$appRoot\modules\AwsCliHelper.psm1" -Force -ErrorAction Stop
+}
+catch {
+    Write-Host "Error: Could not load required modules." -ForegroundColor Red
+    exit 1
+}
+
+$LOG = "$appRoot\Logs\refreshEcrDockerToken.log"
+
+
+function Auth-DockerToAwsEcr {
+    param([string]$Region, [string]$OwnerId)
+
+    Write-Log "Attempting to authenticate Docker with ECR ($Region)" $LOG
+
+    $ecrLoginPassword = aws ecr get-login-password --region $Region
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log "Error: Failed to retrieve ECR login password. Session might be invalid." $LOG
+        throw "ECR Password retrieval failed."
+    }
+
+    $registry = "$OwnerId.dkr.ecr.$Region.amazonaws.com"
+    Write-Log "Target Registry: $registry" $LOG
+
+    $ecrLoginPassword | docker login --username AWS --password-stdin $registry
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log "Error: Failed to log in to Docker." $LOG
+        exit 1
+    }
+
+    Write-Log "Successfully logged in to Docker." $LOG
+}
+
+
+Write-Log "Starting refreshEcrDockerToken at $(Get-Date)" $LOG
 $REGION = Get-Region -RegionFallback $RegionFallback
 
-# ------------------------------------------------------------------
-# Determine the account ID (registry owner)
-# ------------------------------------------------------------------
+if ($SSO) {
+    Write-Host "Initiating AWS SSO Login..." -ForegroundColor Cyan
+    aws sso login
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "AWS SSO Login failed."
+        exit 1
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($AccountId)) {
-    $DOMAIN_OWNER_ID = Get-DomainOwnerId
-    Write-Log "AccountId not supplied - retrieved via STS: $DOMAIN_OWNER_ID" $LOG
+    try {
+        EnsureAwsSsoTokenIsValid -LogFile $LOG 
+        $DOMAIN_OWNER_ID = Get-DomainOwnerId -LogFile $LOG
+    }
+    catch {
+        Write-Error $_
+        exit 1
+    }
+    Write-Log "AccountId retrieved via STS: $DOMAIN_OWNER_ID" $LOG
 } else {
     $DOMAIN_OWNER_ID = $AccountId
     Write-Log "Using supplied AccountId: $DOMAIN_OWNER_ID" $LOG
 }
 
-# ------------------------------------------------------------------
-# Authenticate Docker with AWS ECR
-# ------------------------------------------------------------------
-function Auth-DockerToAwsEcr {
-    Write-Log "Attempting to authenticate Docker with ECR" $LOG
+Auth-DockerToAwsEcr -Region $REGION -OwnerId $DOMAIN_OWNER_ID
 
-    $ecrLoginPassword = aws ecr get-login-password --region $REGION
-    if ($LASTEXITCODE -ne 0) {
-        Write-Log "Failed to retrieve ECR login password" $LOG
-        exit 1
-    }
-
-    $registry = "$DOMAIN_OWNER_ID.dkr.ecr.$REGION.amazonaws.com"
-
-    $ecrLoginPassword | docker login --username AWS --password-stdin $registry
-    if ($LASTEXITCODE -ne 0) {
-        Write-Log "Failed to log in to Docker" $LOG
-        exit 1
-    }
-
-    Write-Log "Successfully logged in to Docker for $registry" $LOG
-}
-
-# ------------------------------------------------------------------
-# Main
-# ------------------------------------------------------------------
-Write-Log "Starting refreshEcrDockerToken at $(Get-Date)" $LOG
-Auth-DockerToAwsEcr
 Write-Log "Done at $(Get-Date)" $LOG

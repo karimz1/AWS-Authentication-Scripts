@@ -1,108 +1,110 @@
-# AWS Authentication Scripts
+# AWS Authentication PWSH Version 🚀
 
 ## Overview
 
-Welcome to the AWS Authentication Scripts repository! This project contains PowerShell scripts designed to streamline the authentication process for AWS services like CodeArtifact and ECR. These scripts will help you log into each service and update necessary tokens or credentials, with detailed logging for easy auditing and troubleshooting.
+Welcome to the AWS Authentication Scripts repository\! This project contains powerful and modular PowerShell scripts designed to **streamline and automate the authentication process** for key AWS services like **CodeArtifact** (for NuGet tokens) and **ECR** (for Docker credentials).
+
+These scripts feature integrated **AWS SSO (Single Sign-On) support** and detailed logging for easy auditing and troubleshooting.
+
+-----
 
 ## Features
 
-- Authenticate and log into AWS CodeArtifact repositories.
-- Authenticate Docker with AWS ECR.
-- Cross-platform compatibility (Windows, macOS, and Linux).
+  * ✅ **CodeArtifact:** Authenticate and refresh NuGet tokens for AWS CodeArtifact repositories.
+  * ✅ **ECR:** Authenticate Docker with AWS ECR to push and pull images.
+  * 🔑 **SSO Management:** Includes an `-SSO` switch to easily force an AWS SSO login when your session expires.
+  * 🌐 **Portability:** Cross-platform compatible (Windows, macOS, and Linux) using PowerShell Core.
+
+-----
 
 ## Prerequisites
 
-- AWS CLI installed and configured. For more information, refer to the [AWS CLI Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) and [Configuring the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
-- Docker installed (for ECR authentication).
-- PowerShell Core (7.x) installed.
-- Access to the AWS CodeArtifact and ECR services.
-- Proper configuration of AWS credentials and region.
+Before running the scripts, ensure you have the following installed and configured:
 
-## Installation
+  * **AWS CLI v2:** Installed and configured, typically utilizing an **SSO Profile** for authentication. Refer to the [AWS CLI Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html).
+  * **Docker:** Installed and running (required for ECR authentication).
+  * **PowerShell Core (7.x+):** Installed as the execution environment.
+  * **Access:** Proper IAM permissions for CodeArtifact (`codeartifact:*`) and ECR (`ecr:*`) services.
 
-1. Clone or download the repository containing the scripts.
+-----
 
 ## Usage
 
-### Refresh NuGet Tokens for AWS CodeArtifact
+All scripts should be executed from PowerShell Core (`pwsh`). Use the `-SSO` switch whenever your session is expired or you need to ensure a fresh login.
 
-1. Open PowerShell Core and navigate to the directory containing the `refreshNugetToken.ps1` script.
-2. Run the script using the following command:
-    ```powershell
-    .\refreshNugetToken.ps1
-    ````
-3. To view the help message, use the following command: ``.\refreshNugetToken.ps1 -help``
+### 1\. Refresh NuGet Tokens for AWS CodeArtifact
 
-4. Optional parameters:
+This script logs into your AWS CodeArtifact domain and updates your NuGet configuration with fresh authentication tokens.
 
-    ``-RegionFallback``: Specify a fallback region (e.g., ``us-east-1``) if the AWS CLI region is not configured.
-    ``-DEBUG:`` Enable debug mode for more detailed logs.
-    Example:
+  * **Script:** `refreshNugetToken.ps1`
 
-    ```` pwsh
-    .\refreshNugetToken.ps1 -RegionFallback "eu-west-1" -DEBUG $true
-    ````
+| Command | Purpose |
+| :--- | :--- |
+| `.\refreshNugetToken.ps1` | **Standard Run.** Uses the existing AWS session/profile. |
+| `.\refreshNugetToken.ps1 -SSO` | **Force Login.** Executes `aws sso login` before refreshing tokens. **Use this when your session expires.** |
+| `.\refreshNugetToken.ps1 -RegionFallback "region"` | Specify a fallback region if the AWS CLI region is not configured (e.g., `"eu-west-1"`). |
+| `.\refreshNugetToken.ps1 -DEBUG $true` | Enable debug mode for verbose output and detailed logs. |
 
+-----
 
-### Authenticate Docker with AWS ECR
+### 2\. Authenticate Docker with AWS ECR
 
-1. Open PowerShell Core and navigate to the directory containing the `refreshEcrDockerToken.ps1` script.
-2. Run the script using the following command:
-    ```powershell
-    .\refreshEcrDockerToken.ps1
+This script retrieves a temporary authentication token from ECR and logs your local Docker client into the registry.
+
+  * **Script:** `refreshEcrDockerToken.ps1`
+
+| Command | Purpose |
+| :--- | :--- |
+| `.\refreshEcrDockerToken.ps1` | **Standard Run.** Uses the existing AWS session/profile. |
+| `.\refreshEcrDockerToken.ps1 -SSO` | **Force Login.** Executes `aws sso login` before fetching ECR credentials. **Use this when your session expires.** |
+| `.\refreshEcrDockerToken.ps1 -RegionFallback "region"` | Specify a fallback region (e.g., `"us-east-1"`). |
+| `.\refreshEcrDockerToken.ps1 -AccountId 123456789012` | Provide the 12-digit AWS Account ID directly, skipping the `sts:GetCallerIdentity` check. |
+
+-----
+
+## Automate Session Refresh ⏰
+
+To maintain continuous access without manual intervention, integrate these scripts into your system's scheduling tools.
+
+### Cron Job Example (Linux/macOS)
+
+This runs the scripts every time the system reboots, ensuring a fresh session at startup.
+
+1.  Open your crontab configuration:
+
+    ```sh
+    crontab -e
     ```
-3. To view the help message, use the following command: ``.\refreshEcrDockerToken.ps1 -help``
 
-4. Optional parameters:
+2.  Add the following lines (adjust the path and ensure the `-SSO` flag is included if the session needs to be forced):
 
-    ``-RegionFallback``: Specify a fallback region (e.g., ``us-east-1``) if the AWS CLI region is not configured.
-    Example:
+    ```sh
+    # Run at system startup/reboot
+    @reboot pwsh /path/to/the/repository/refreshNugetToken.ps1 -SSO
+    @reboot pwsh /path/to/the/repository/refreshEcrDockerToken.ps1 -SSO
+    ```
 
-    ```` pwsh
-    .\refreshEcrDockerToken.ps1 -RegionFallback "eu-west-1"
-    ````
+### Task Scheduler Example (Windows)
 
+Use Task Scheduler to run the scripts automatically at user login.
 
-### Automate with Cron Jobs or Task Scheduler 
+1.  Open Task Scheduler and create a new task with a **Trigger** set to **At log on**.
 
-To ensure that your development machine is always authenticated with the necessary services, feel free to add these scripts to your cron jobs (Linux/macOS) or Task Scheduler (Windows). This way, you can automate the authentication process to run at startup or at regular intervals. 
+2.  Set the **Action** to **Start a program** with the following details:
 
-#### Cron Job Example (Linux/macOS)
+    | Script | Program/script | Add arguments (optional) |
+    | :--- | :--- | :--- |
+    | **NuGet** | `pwsh` | `-NoProfile -File "C:\path\to\repository\refreshNugetToken.ps1" -SSO` |
+    | **ECR** | `pwsh` | `-NoProfile -File "C:\path\to\repository\refreshEcrDockerToken.ps1" -SSO` |
 
-1. Open your crontab configuration:    
+-----
 
-```sh    
-crontab -e    
-```
-
-2. Add the following line to run the script at startup (adjust the path as needed):    
-
-```sh    
-@reboot pwsh /path/to/the/repository/refreshNugetTokens.ps1    
-@reboot pwsh /path/to/the/repository/refreshEcrDockerToken.ps1    
-```
-
-#### Task Scheduler Example (Windows) 
-1. Open Task Scheduler and create a new task. 
-
-2. Set the trigger to run the task at login. 
-
-3. Set the action to start a program and use the following settings: 
-
-    `"pwsh C:\path\to\the\repository\refreshNugetTokens.ps1"`
-
-4. same for the other scripts if you need it.
-
-
-
-## Adding More Authentication Mechanisms
-
-Currently, this repository includes authentication scripts for AWS CodeArtifact and AWS ECR. If you have other authentication mechanisms to add, feel free to contribute!
+## Contribution & License
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
 
 ## Contributing
 
-Hi, I'm Karim Zouine, the developer of these scripts. Contributions are very welcome! If you have suggestions, improvements, or bug fixes, please open an issue or submit a pull request. Let's make this project even better together!
+Hi, I'm Karim Zouine, the developer of these scripts. Contributions are very welcome\! If you have suggestions, improvements, or bug fixes, please open an issue or submit a pull request. Let's make this project even better together\!
